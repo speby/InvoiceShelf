@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored — never commit it.
+
+aws_region   = "us-east-1"
+project_name = "invoiceshelf"
+
+# Trello — from https://trello.com/app-key
+trello_api_key    = "REPLACE_ME"   # Short hex key shown on the app-key page
+trello_api_secret = "REPLACE_ME"   # Secret shown alongside the key (used for webhook HMAC)
+trello_api_token  = "REPLACE_ME"   # OAuth token (long string starting with ATATT3x...)
+
+trello_board_id        = "jFWLnGp4"
+trello_ready_list_name = "Ready for Claude Code"
+
+# GitHub — fine-grained PAT with Contents (write) and Pull Requests (write)
+github_pat  = "REPLACE_ME"
+github_repo = "speby/InvoiceShelf"
+
+# Anthropic
+claude_api_key = "REPLACE_ME"
+
+# EC2 — set after running `packer build infrastructure/packer/harness.pkr.hcl`
+# Leave empty to fall back to plain Amazon Linux 2023 (slower cold start)
+harness_ami_id    = ""
+ec2_instance_type = "t3.large"

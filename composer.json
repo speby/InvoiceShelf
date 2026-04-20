@@ -92,6 +92,15 @@
             "dont-discover": []
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./packages/invoiceshelf/modules",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",

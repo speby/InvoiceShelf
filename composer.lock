@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5df4a89701d63326d9f5d6a14d846659",
+    "content-hash": "b31d982cca976b272616584d5fac50e5",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -1731,16 +1731,10 @@
         {
             "name": "invoiceshelf/modules",
             "version": "1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/InvoiceShelf/modules.git",
-                "reference": "996f80cb279416ef7da5a32f6e119ff9ce703591"
-            },
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/InvoiceShelf/modules/zipball/996f80cb279416ef7da5a32f6e119ff9ce703591",
-                "reference": "996f80cb279416ef7da5a32f6e119ff9ce703591",
-                "shasum": ""
+                "type": "path",
+                "url": "./packages/invoiceshelf/modules",
+                "reference": "330e62d84081a0cad5754988a051263ce978217f"
             },
             "require": {
                 "ext-json": "*",
@@ -1758,30 +1752,49 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "aliases": {
-                        "Module": "Nwidart\\Modules\\Facades\\Module"
-                    },
                     "providers": [
                         "Nwidart\\Modules\\LaravelModulesServiceProvider"
-                    ]
+                    ],
+                    "aliases": {
+                        "Module": "Nwidart\\Modules\\Facades\\Module"
+                    }
                 },
                 "branch-alias": {
                     "dev-master": "8.0-dev"
                 }
             },
             "autoload": {
-                "files": [
-                    "src/helpers.php"
-                ],
                 "psr-4": {
                     "Nwidart\\Modules\\": "src"
+                },
+                "files": [
+                    "src/helpers.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Nwidart\\Modules\\Tests\\": "tests",
+                    "Modules\\Recipe\\": "tests/stubs/valid/Recipe"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "update-snapshots": [
+                    "./vendor/bin/phpunit --no-coverage -d --update-snapshots"
+                ],
+                "test": [
+                    "vendor/bin/phpunit"
+                ],
+                "test-coverage": [
+                    "vendor/bin/phpunit --debug --coverage-html coverage"
+                ],
+                "pcf": [
+                    "vendor/bin/php-cs-fixer fix --verbose"
+                ]
+            },
             "license": [
                 "MIT"
             ],
-            "description": "Crater Module Management Package",
+            "description": "InvoiceShelf Module Management Package",
             "keywords": [
                 "crater",
                 "laravel",
@@ -1789,10 +1802,10 @@
                 "modules",
                 "rad"
             ],
-            "support": {
-                "source": "https://github.com/InvoiceShelf/modules/tree/1.0.0"
-            },
-            "time": "2021-12-21T14:18:56+00:00"
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "laravel/framework",

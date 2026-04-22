@@ -228,6 +228,8 @@ test('invoice mark as paid', function () {
     $invoice = Invoice::factory()->create([
         'invoice_date' => '1988-07-18',
         'due_date' => '1988-08-18',
+        'total' => 0,
+        'due_amount' => 0,
     ]);
 
     $data = [
@@ -243,6 +245,25 @@ test('invoice mark as paid', function () {
         ]);
 
     $this->assertEquals(Invoice::find($invoice->id)->paid_status, Invoice::STATUS_PAID);
+});
+
+test('invoice cannot be marked as completed with outstanding balance', function () {
+    $invoice = Invoice::factory()->create([
+        'invoice_date' => '1988-07-18',
+        'due_date' => '1988-08-18',
+        'total' => 100000,
+        'due_amount' => 100000,
+    ]);
+
+    $data = [
+        'status' => Invoice::STATUS_COMPLETED,
+    ];
+
+    $response = postJson('api/v1/invoices/'.$invoice->id.'/status', $data);
+
+    $response->assertStatus(412);
+
+    $this->assertEquals(Invoice::find($invoice->id)->paid_status, Invoice::STATUS_UNPAID);
 });
 
 test('invoice mark as sent', function () {

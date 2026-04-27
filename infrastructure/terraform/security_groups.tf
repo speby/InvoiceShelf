@@ -1,6 +1,7 @@
 resource "aws_security_group" "harness_ec2" {
   name        = "${var.project_name}-harness-ec2"
-  description = "Harness EC2 instances — outbound only; SSM and GitHub accessed over HTTPS"
+  description = "Harness EC2 instances - outbound only; SSM and GitHub accessed over HTTPS"
+  vpc_id      = aws_vpc.harness.id
 
   egress {
     description = "Allow all outbound"

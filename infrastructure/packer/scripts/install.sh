@@ -6,11 +6,11 @@ echo "==> System update"
 sudo dnf update -y
 
 echo "==> Installing base utilities"
-sudo dnf install -y git jq curl wget unzip tar make gcc-c++
+sudo dnf install -y git jq wget unzip tar make gcc-c++
 
 # ── Node.js 20 ───────────────────────────────────────────────────────────────
-echo "==> Installing Node.js 20"
-curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+echo "==> Installing Node.js 24"
+curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo bash -
 sudo dnf install -y nodejs
 node --version
 npm --version
@@ -60,5 +60,9 @@ aws --version
 echo "==> Pre-warming Claude Code node_modules"
 # Claude Code resolves its own deps at first run; trigger once here
 HOME=/root claude --version 2>/dev/null || true
+
+echo "==> Creating workspace directory"
+sudo mkdir -p /workspace
+sudo chown ec2-user:ec2-user /workspace
 
 echo "==> Install complete"

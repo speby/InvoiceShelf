@@ -37,6 +37,7 @@ resource "aws_launch_template" "harness" {
   network_interfaces {
     associate_public_ip_address = true
     security_groups             = [aws_security_group.harness_ec2.id]
+    subnet_id                   = aws_subnet.harness_public.id
     delete_on_termination       = true
   }
 

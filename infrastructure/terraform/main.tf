@@ -16,7 +16,7 @@ terraform {
     bucket         = "invoiceshelf-terraform-state"
     key            = "claude-harness/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "invoiceshelf-terraform-locks"
+    use_lockfile = true
     encrypt        = true
   }
 }

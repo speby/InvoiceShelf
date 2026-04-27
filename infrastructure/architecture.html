@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>InvoiceShelf Agentic Harness Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0f1117;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    /* allow the diagram to define the page width */
+    width: max-content;
+    min-width: 100vw;
+    padding: 32px;
+  }
+  h1 {
+    color: #e2e8f0;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+  p.sub {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+  .mermaid {
+    background: #1e2433;
+    border-radius: 12px;
+    padding: 32px;
+    border: 1px solid #2d3548;
+    /* let the SVG render at its natural size — no scaling */
+    width: max-content;
+  }
+  .mermaid svg {
+    max-width: none !important;
+  }
+</style>
+</head>
+<body>
+<h1>InvoiceShelf — Agentic Engineering Harness</h1>
+<p class="sub">Trello → API Gateway → Lambda → EC2 (Claude Code) → GitHub PR</p>
+<div class="mermaid">
+%%{init: {
+  "theme": "dark",
+  "themeVariables": {
+    "background": "#1e2433",
+    "primaryColor": "#2d3f6b",
+    "primaryTextColor": "#e2e8f0",
+    "primaryBorderColor": "#4a6fa5",
+    "lineColor": "#64748b",
+    "secondaryColor": "#1a2744",
+    "tertiaryColor": "#162032",
+    "clusterBkg": "#161d2e",
+    "clusterBorder": "#2d3548",
+    "edgeLabelBackground": "#1e2433",
+    "fontFamily": "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "fontSize": "13px"
+  }
+}}%%
+
+flowchart TD
+
+  subgraph TRELLO["🗂  Trello Board"]
+    direction TB
+    CARD["📋 Card\n── task description\n── acceptance criteria"]
+    LIST["'Ready for Claude Code' list"]
+    COMMENT["💬 Human comment\n(iteration / change request)"]
+    CARD -->|moved to| LIST
+  end
+
+  subgraph IaC["🏗  Infrastructure as Code"]
+    direction LR
+    TF["Terraform\nAPI GW · Lambda · EC2\nIAM · SSM · S3 · VPC"]
+    PKR["Packer\nBuilds pre-baked AMI"]
+  end
+
+  subgraph AWS["☁  AWS"]
+    direction TB
+
+    subgraph APIGW["API Gateway  (HTTP API)"]
+      ROUTE["POST /webhook/trello\nHEAD /webhook/trello"]
+    end
+
+    subgraph LAMBDA["Lambda Dispatcher  (Python 3.12)"]
+      direction TB
+      L1["① Validate HMAC-SHA1 signature"]
+      L2["② Parse Trello action type"]
+      L3A["③a  card moved →\nwrite job to SSM\nlaunch EC2"]
+      L3B["③b  comment on card →\nSSM Run Command\n(or new EC2 if idle)"]
+      L1 --> L2
+      L2 --> L3A
+      L2 --> L3B
+    end
+
+    subgraph SSM["SSM Parameter Store"]
+      SEC["🔐 SecureStrings\n• Trello API key / token\n• GitHub PAT\n• Claude API key"]
+      JOB["/invoiceshelf/jobs/{card_id}\njob JSON written by Lambda\nread + deleted by harness"]
+    end
+
+    subgraph EC2G["EC2  (t3.large · self-terminates)"]
+      subgraph AMI["Pre-baked AMI  (Packer)"]
+        direction TB
+        TOOLS["Node 24 · Claude Code CLI\ngh CLI · PHP 8 · Composer\ngit · jq · AWS CLI"]
+        HARNESS["harness.sh\n① Read job from SSM\n② Fetch secrets from SSM\n③ Clone repo + create branch\n④ claude --dangerously-skip-permissions -p task\n⑤ Commit + push changes\n⑥ gh pr create\n⑦ Post PR link → Trello card\n⑧ Upload logs → S3\n⑨ shutdown -h now"]
+        TOOLS ~~~ HARNESS
+      end
+    end
+
+    subgraph STORAGE["Storage & Observability"]
+      direction LR
+      S3A["S3\nArtifacts · Logs\nLambda packages\nTF state"]
+      CW["CloudWatch Logs\n/invoiceshelf/harness\n(real-time stream)"]
+    end
+
+    ROUTE --> L1
+    L3A -->|write job param| JOB
+    L3A -->|"RunInstances\n(Launch Template)"| EC2G
+    L3B -->|SSM RunCommand| EC2G
+    HARNESS -->|read job| JOB
+    HARNESS -->|read secrets| SEC
+    HARNESS -->|upload logs| S3A
+    HARNESS -->|stream logs| CW
+  end
+
+  subgraph GH["⌥  GitHub  (speby/InvoiceShelf)"]
+    direction TB
+    REPO["Source Repository\n(master branch)"]
+    BRANCH["Feature Branch\nclaude/card-{id}-{slug}"]
+    PR["Pull Request\n+ Claude output summary"]
+    REPO --> BRANCH --> PR
+  end
+
+  LIST -->|"webhook POST"| ROUTE
+  COMMENT -->|"webhook POST"| ROUTE
+  HARNESS -->|"git clone + push"| BRANCH
+  HARNESS -->|"post comment"| CARD
+  PR -.->|"review → merge"| REPO
+
+  TF -.->|manages| AWS
+  PKR -.->|builds| AMI
+
+  classDef ext fill:#1a2a1a,stroke:#2d5a2d,color:#86efac
+  classDef aws fill:#1a2035,stroke:#3b5998,color:#93c5fd
+  classDef iac fill:#2a1a2a,stroke:#5a2d5a,color:#d8b4fe
+  class TRELLO,GH ext
+  class AWS aws
+  class IaC iac
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: 'loose',
+    theme: 'dark'
+  });
+
+  // After Mermaid renders, stamp the SVG's natural viewBox size as px dimensions
+  // so it renders at full size instead of collapsing or being squished.
+  function fixSvg() {
+    const svg = document.querySelector('.mermaid svg');
+    if (!svg) { setTimeout(fixSvg, 200); return; }
+    const vb = svg.viewBox.baseVal;
+    if (!vb || vb.width === 0) { setTimeout(fixSvg, 200); return; }
+
+    // Fix 1: stamp intrinsic size so SVG doesn't collapse
+    svg.setAttribute('width', vb.width);
+    svg.setAttribute('height', vb.height);
+
+    // Fix 2: remove clip-path from every subgraph label so text isn't cut off
+    svg.querySelectorAll('[class*="cluster"] text, [class*="cluster"] .label, .cluster-label, .nodeLabel')
+      .forEach(el => {
+        el.removeAttribute('clip-path');
+        el.style.clipPath = 'none';
+        el.style.overflow = 'visible';
+      });
+
+    // Also remove clip-path on the label foreignObject/span wrappers
+    svg.querySelectorAll('foreignObject, .label-container')
+      .forEach(el => {
+        el.removeAttribute('clip-path');
+        el.style.overflow = 'visible';
+      });
+
+    // Widen any rect used as the subgraph title background that may be too narrow
+    svg.querySelectorAll('.cluster rect')
+      .forEach(rect => rect.setAttribute('clip-path', 'none'));
+  }
+  fixSvg();
+</script>
+</body>
+</html>

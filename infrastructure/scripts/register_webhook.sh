@@ -9,7 +9,7 @@
 #   AWS_REGION=us-east-1 ./register_webhook.sh
 set -euo pipefail
 
-BOARD_ID="${TRELLO_BOARD_ID:-jFWLnGp4}"
+BOARD_ID="${TRELLO_BOARD_ID:-69e6a666622bed84069daa5a}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 PROJECT_NAME="${PROJECT_NAME:-invoiceshelf}"
 
@@ -47,6 +47,8 @@ echo ""
 
 # ── List existing webhooks and delete any stale ones for this board ──────────
 echo "Checking for existing webhooks on board $BOARD_ID..."
+echo "$TRELLO_API_TOKEN"
+echo "$TRELLO_API_KEY"
 EXISTING=$(curl -sf \
   "https://api.trello.com/1/tokens/${TRELLO_API_TOKEN}/webhooks?key=${TRELLO_API_KEY}" \
   | jq -r ".[] | select(.idModel == \"$BOARD_ID\") | .id")

@@ -122,6 +122,16 @@ resource "aws_iam_role_policy" "harness_ec2" {
           "${aws_s3_bucket.artifacts.arn}/*",
         ]
       },
+      {
+        Sid    = "CloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/invoiceshelf/harness:*"
+      },
     ]
   })
 }

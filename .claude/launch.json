@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "architecture-diagram",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "7722", "--directory", "infrastructure"],
+      "port": 7722
+    }
+  ]
+}

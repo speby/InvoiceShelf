@@ -20,7 +20,6 @@ TRELLO_BOARD_ID = os.environ["TRELLO_BOARD_ID"]
 TRELLO_READY_LIST_NAME = os.environ["TRELLO_READY_LIST_NAME"]
 GITHUB_REPO = os.environ["GITHUB_REPO"]
 EC2_LAUNCH_TEMPLATE_ID = os.environ["EC2_LAUNCH_TEMPLATE_ID"]
-EC2_SUBNET_ID = os.environ["EC2_SUBNET_ID"]
 ARTIFACTS_BUCKET = os.environ["ARTIFACTS_BUCKET"]
 
 
@@ -137,10 +136,14 @@ def _launch_harness(
 
     user_data = base64.b64encode(
         f"""#!/bin/bash
-export CARD_ID="{card_id}"
-export JOB_PARAM="{job_param}"
-export PROJECT_NAME="{PROJECT_NAME}"
-/opt/harness/run.sh
+# Run harness as ec2-user — claude refuses --dangerously-skip-permissions as root
+sudo -u ec2-user -E bash -c '
+  export CARD_ID="{card_id}"
+  export JOB_PARAM="{job_param}"
+  export PROJECT_NAME="{PROJECT_NAME}"
+  export HOME=/home/ec2-user
+  /opt/harness/run.sh
+'
 """.encode()
     ).decode()
 
@@ -148,7 +151,6 @@ export PROJECT_NAME="{PROJECT_NAME}"
         LaunchTemplate={"LaunchTemplateId": EC2_LAUNCH_TEMPLATE_ID, "Version": "$Latest"},
         MinCount=1,
         MaxCount=1,
-        SubnetId=EC2_SUBNET_ID,
         UserData=user_data,
         TagSpecifications=[{
             "ResourceType": "instance",

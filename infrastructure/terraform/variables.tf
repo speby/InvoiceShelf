@@ -31,7 +31,7 @@ variable "trello_api_token" {
 variable "trello_board_id" {
   description = "Trello board ID"
   type        = string
-  default     = "jFWLnGp4"
+  default     = "69e6a666622bed84069daa5a"
 }
 
 variable "trello_ready_list_name" {

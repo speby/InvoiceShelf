@@ -3,6 +3,9 @@
 # Runs on EC2, reads job details from SSM, executes Claude Code, creates a PR, updates Trello.
 set -euo pipefail
 
+export HOME=/home/ec2-user
+export USER=ec2-user
+
 LOG_FILE="/tmp/harness.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -20,6 +23,30 @@ INSTANCE_ID=$(curl -sf -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
 
 export AWS_DEFAULT_REGION="$AWS_REGION"
 log "Instance: $INSTANCE_ID  Region: $AWS_REGION"
+
+# ── Stream logs to CloudWatch in real-time ───────────────────────────────────
+CW_LOG_GROUP="/invoiceshelf/harness"
+CW_LOG_STREAM="$INSTANCE_ID"
+aws logs create-log-group --log-group-name "$CW_LOG_GROUP" 2>/dev/null || true
+aws logs create-log-stream --log-group-name "$CW_LOG_GROUP" --log-stream-name "$CW_LOG_STREAM" 2>/dev/null || true
+
+cw_flush() {
+  local msg
+  msg=$(tail -50 "$LOG_FILE" 2>/dev/null | head -50)
+  [[ -z "$msg" ]] && return
+  local ts
+  ts=$(date +%s%3N)
+  aws logs put-log-events \
+    --log-group-name "$CW_LOG_GROUP" \
+    --log-stream-name "$CW_LOG_STREAM" \
+    --log-events "[{\"timestamp\":${ts},\"message\":$(echo "$msg" | jq -Rs .)}]" \
+    2>/dev/null || true
+}
+
+# Flush logs to CloudWatch every 30 seconds in the background
+(while true; do sleep 30; cw_flush; done) &
+CW_PID=$!
+trap 'kill $CW_PID 2>/dev/null; cw_flush' EXIT
 
 # ── Read job from SSM ────────────────────────────────────────────────────────
 log "Reading job from SSM: $JOB_PARAM"
@@ -108,6 +135,9 @@ composer install --no-interaction --prefer-dist --optimize-autoloader
 log "Installing Node dependencies"
 npm ci --prefer-offline 2>/dev/null || npm install
 
+# Reset lockfiles — installs may update them but we only want task-related changes committed
+git checkout -- composer.lock yarn.lock package-lock.json 2>/dev/null || true
+
 # ── Build the Claude Code prompt ─────────────────────────────────────────────
 PROMPT_FILE="/tmp/harness_prompt.md"
 cat > "$PROMPT_FILE" <<PROMPT
@@ -139,14 +169,17 @@ cat >> "$PROMPT_FILE" <<INSTRUCTIONS
 
 ## Requirements
 
-1. Explore the codebase to understand the affected area before writing code
-2. Implement the task following conventions from CLAUDE.md
-3. Write feature tests for any new or changed behaviour
-4. After modifying PHP files, run: vendor/bin/pint --dirty --format agent
-5. Verify tests pass: php artisan test --compact
-6. Do NOT commit — the harness handles that
+1. Read CLAUDE.md first to understand project conventions
+2. Explore only the files relevant to this task before writing any code
+3. Implement exactly what the task describes — nothing more, nothing less
+4. Write feature tests for any new or changed behaviour (feature tests preferred)
+5. After modifying PHP files run: vendor/bin/pint --dirty --format agent
+6. Verify tests pass: php artisan test --compact
+7. Do NOT run npm install, yarn, composer install, or any package manager commands
+8. Do NOT commit or push — the harness handles that
+9. Do NOT modify unrelated files, refactor surrounding code, or change lockfiles
 
-Stay focused on the task. Do not refactor unrelated code.
+If the task is unclear, make a conservative best-effort attempt at the most likely intent.
 INSTRUCTIONS
 
 # ── Run Claude Code ──────────────────────────────────────────────────────────

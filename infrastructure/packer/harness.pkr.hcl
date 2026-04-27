@@ -35,6 +35,12 @@ source "amazon-ebs" "harness" {
   ami_description = "InvoiceShelf Claude Code engineering harness"
   ssh_username    = "ec2-user"
 
+  vpc_id    = "vpc-04018b61e763e735c"
+  subnet_id = "subnet-070be4de9312b5df7"
+
+  # Packer's temporary instance needs a public IP to receive SSH back
+  associate_public_ip_address = true
+
   launch_block_device_mappings {
     device_name           = "/dev/xvda"
     volume_size           = 30

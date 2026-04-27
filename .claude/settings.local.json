@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --repo InvoiceShelf/InvoiceShelf --title 'Add Trello → Claude Code → GitHub agentic engineering harness' --head speby:claude/zealous-wu-9648fd --base master --body ' *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

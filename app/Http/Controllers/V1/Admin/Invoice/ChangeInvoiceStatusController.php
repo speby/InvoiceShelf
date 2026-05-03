@@ -23,6 +23,11 @@ class ChangeInvoiceStatusController extends Controller
             $invoice->sent = true;
             $invoice->save();
         } elseif ($request->status == Invoice::STATUS_COMPLETED) {
+            if ($invoice->due_amount > 0) {
+                return response()->json([
+                    'error' => 'Invoice has an outstanding balance and cannot be marked as completed.',
+                ], 412);
+            }
             $invoice->status = Invoice::STATUS_COMPLETED;
             $invoice->paid_status = Invoice::STATUS_PAID;
             $invoice->due_amount = 0;
